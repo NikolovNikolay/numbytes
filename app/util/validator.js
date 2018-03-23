@@ -38,11 +38,12 @@ var Validator = function () {
         key: "checkIfValueInBounds",
         value: function checkIfValueInBounds(primitive, value) {
             if (!this.checkIfValidNumber(value)) {
-                throw new Error("Not a valid value to parse.");
+                throw new Error("Not a valid value to parse - " + value);
             }
 
             if (value < primitive.min || value > primitive.max) {
-                throw new Error("Value not in target primitive validity range.");
+                throw new Error("Value not in target primitive validity range: "
+                    + primitive.min + "<= value <= " + primitive.max);
             }
         }
     }]);

@@ -1,6 +1,7 @@
 "use strict";
 
 var Validator = require('../util/validator');
+var SingleValueParser = require('./single-value-parser');
 
 var _createClass = function () {
     function defineProperties(target, props) {
@@ -30,6 +31,11 @@ var MultiValueParser = function () {
     function MultiValueParser(singleValueParser) {
         _classCallCheck(this, MultiValueParser);
 
+        if (singleValueParser == null ||
+            SingleValueParser.name !== singleValueParser.constructor.name) {
+            throw new Error("Invalid parameter. Expects SingleValueParser");
+        }
+
         this.singleValueParser = singleValueParser;
     }
 
@@ -41,9 +47,19 @@ var MultiValueParser = function () {
             var bytes = [];
 
             parseTaskQueue.tasks.forEach(function (task) {
-                bytes = bytes.concat(_this.singleValueParser.numberToBytes(task.target, task.value));
+                bytes = bytes.concat(
+                    _this.singleValueParser
+                        .numberToBytes(task.target, task.value)
+                );
             });
 
+            if (parseTaskQueue.padZeros &&
+                bytes.length < parseTaskQueue.maximumBytes) {
+                let offset = parseTaskQueue.maximumBytes - bytes.length;
+                for (let i = 0; i < offset; i++) {
+                    bytes.push(0);
+                }
+            }
             return bytes;
         }
     }]);
@@ -55,6 +71,7 @@ MultiValueParser.ParseTaskQueue = function () {
     function _class(maxBytes) {
         _classCallCheck(this, _class);
 
+        this.padZeros = true;
         this.totalBytesUsed = 0;
         this.maximumBytes = maxBytes;
         this.tasks = [];
@@ -65,11 +82,21 @@ MultiValueParser.ParseTaskQueue = function () {
         value: function addParseTask(targetPrimitive, value) {
 
             if (targetPrimitive.bytes + this.totalBytesUsed > this.maximumBytes) {
-                throw new Error("Maximum bytes count for builder exceeded");
+                throw new Error("Configured package byte size (" + this.maximumBytes + ")  exceeded.");
             }
 
             this.totalBytesUsed += targetPrimitive.bytes;
-            this.tasks.push({"target": targetPrimitive, "value": value});
+            this.tasks.push({ "target": targetPrimitive, "value": value });
+        }
+    }, {
+        key: "padZeros",
+        value: function padZeros(ifPad) {
+
+            if (typeof ifPad !== "boolean") {
+                throw new Error("Invalid parameter. Expected boolean.");
+            }
+
+            this.padZeros = ifPad;
         }
     }]);
 
